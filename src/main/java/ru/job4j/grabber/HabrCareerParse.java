@@ -5,17 +5,25 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import ru.job4j.grabber.utils.DateTimeParser;
 import ru.job4j.grabber.utils.HabrCareerDateTimeParser;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
-public class HabrCareerParse {
+public class HabrCareerParse implements Parse {
 
     private static final String SOURCE_LINK = "https://career.habr.com";
-    public static final String PREFIX = "/vacancies?page=";
-    public static final String SUFFIX = "&q=Java%20developer&type=all";
+    private static final String PREFIX = "/vacancies?page=";
+    private static final String SUFFIX = "&q=Java%20developer&type=all";
+    private final DateTimeParser dateTimeParser;
+
+    public HabrCareerParse(DateTimeParser dateTimeParser) {
+        this.dateTimeParser = dateTimeParser;
+    }
 
     private static String retrieveDescription(String link) throws IOException {
         Connection connection = Jsoup.connect(link);
@@ -24,30 +32,35 @@ public class HabrCareerParse {
         return descElement.text();
     }
 
-    public static void main(String[] args) throws IOException {
+    private Post fillPost(Element row, String link) throws IOException {
+        Post post = new Post();
+        Element dateElement = row.select(".vacancy-card__date").first();
+        Element dateInfoChild = dateElement.child(0);
+        Element titleElement = row.select(".vacancy-card__title").first();
+        Element linkElement = titleElement.child(0);
+        post.setCreated(dateTimeParser.parse(dateInfoChild.attr("datetime")));
+        post.setTitle(titleElement.text());
+        post.setLink(String.format("%s%s", link, linkElement.attr("href")));
+        post.setDescription(retrieveDescription(post.getLink()));
+        return post;
+    }
+
+    @Override
+    public List<Post> list(String link) throws IOException {
+        List<Post> posts = new ArrayList<>();
         for (int pageNumber = 1; pageNumber <= 5; pageNumber++) {
-            String fullLink = "%s%s%d%s".formatted(SOURCE_LINK, PREFIX, pageNumber, SUFFIX);
+            String fullLink = "%s%s%d%s".formatted(link, PREFIX, pageNumber, SUFFIX);
             Connection connection = Jsoup.connect(fullLink);
             Document document = connection.get();
             Elements rows = document.select(".vacancy-card__inner");
             rows.forEach(row -> {
-                Element dateElement = row.select(".vacancy-card__date").first();
-                Element dateInfoChild = dateElement.child(0);
-                HabrCareerDateTimeParser dateTimeParser = new HabrCareerDateTimeParser();
-                LocalDateTime dateTime = dateTimeParser.parse(dateInfoChild.attr("datetime"));
-
-                Element titleElement = row.select(".vacancy-card__title").first();
-                Element linkElement = titleElement.child(0);
-                String vacancyName = titleElement.text();
-                String link = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
-                System.out.printf("%s %s [from: %s]%n", vacancyName, link,
-                        dateTime.format(DateTimeFormatter.ofPattern("yyyy-mm-ddТhh:mm:ss")));
                 try {
-                    System.out.println(retrieveDescription(link));
+                    posts.add(fillPost(row, link));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             });
         }
+        return posts;
     }
 }
