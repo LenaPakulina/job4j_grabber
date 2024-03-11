@@ -18,23 +18,24 @@ public class HabrCareerParse {
     public static final String SUFFIX = "&q=Java%20developer&type=all";
 
     public static void main(String[] args) throws IOException {
-        int pageNumber = 1;
-        String fullLink = "%s%s%d%s".formatted(SOURCE_LINK, PREFIX, pageNumber, SUFFIX);
-        Connection connection = Jsoup.connect(fullLink);
-        Document document = connection.get();
-        Elements rows = document.select(".vacancy-card__inner");
-        rows.forEach(row -> {
-            Element dateElement = row.select(".vacancy-card__date").first();
-            Element dateInfoChild = dateElement.child(0);
-            HabrCareerDateTimeParser dateTimeParser = new HabrCareerDateTimeParser();
-            LocalDateTime dateTime = dateTimeParser.parse(dateInfoChild.attr("datetime"));
+        for (int pageNumber = 1; pageNumber <= 5; pageNumber++) {
+            String fullLink = "%s%s%d%s".formatted(SOURCE_LINK, PREFIX, pageNumber, SUFFIX);
+            Connection connection = Jsoup.connect(fullLink);
+            Document document = connection.get();
+            Elements rows = document.select(".vacancy-card__inner");
+            rows.forEach(row -> {
+                Element dateElement = row.select(".vacancy-card__date").first();
+                Element dateInfoChild = dateElement.child(0);
+                HabrCareerDateTimeParser dateTimeParser = new HabrCareerDateTimeParser();
+                LocalDateTime dateTime = dateTimeParser.parse(dateInfoChild.attr("datetime"));
 
-            Element titleElement = row.select(".vacancy-card__title").first();
-            Element linkElement = titleElement.child(0);
-            String vacancyName = titleElement.text();
-            String link = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
-            System.out.printf("%s %s [from: %s]%n", vacancyName, link,
-                    dateTime.format(DateTimeFormatter.ofPattern("yyyy-mm-ddТhh:mm:ss")));
-        });
+                Element titleElement = row.select(".vacancy-card__title").first();
+                Element linkElement = titleElement.child(0);
+                String vacancyName = titleElement.text();
+                String link = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
+                System.out.printf("%s %s [from: %s]%n", vacancyName, link,
+                        dateTime.format(DateTimeFormatter.ofPattern("yyyy-mm-ddТhh:mm:ss")));
+            });
+        }
     }
 }
