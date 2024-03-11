@@ -10,7 +10,6 @@ public class Post {
     private String description;
     private LocalDateTime created;
 
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
