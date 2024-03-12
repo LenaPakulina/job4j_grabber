@@ -46,20 +46,24 @@ public class HabrCareerParse implements Parse {
     }
 
     @Override
-    public List<Post> list(String link) throws IOException {
+    public List<Post> list(String link) {
         List<Post> posts = new ArrayList<>();
-        for (int pageNumber = 1; pageNumber <= 5; pageNumber++) {
-            String fullLink = "%s%s%d%s".formatted(link, PREFIX, pageNumber, SUFFIX);
-            Connection connection = Jsoup.connect(fullLink);
-            Document document = connection.get();
-            Elements rows = document.select(".vacancy-card__inner");
-            rows.forEach(row -> {
-                try {
-                    posts.add(fillPost(row, link));
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
+        try {
+            for (int pageNumber = 1; pageNumber <= 5; pageNumber++) {
+                String fullLink = "%s%s%d%s".formatted(link, PREFIX, pageNumber, SUFFIX);
+                Connection connection = Jsoup.connect(fullLink);
+                Document document = connection.get();
+                Elements rows = document.select(".vacancy-card__inner");
+                rows.forEach(row -> {
+                    try {
+                        posts.add(fillPost(row, link));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         return posts;
     }

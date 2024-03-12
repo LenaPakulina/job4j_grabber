@@ -85,7 +85,6 @@ public class Post {
                 + "id=" + id
                 + ", title='" + title + '\''
                 + ", link='" + link + '\''
-                + ", description='" + description + '\''
                 + ", created=" + created.format(DateTimeFormatter.ofPattern("yyyy-mm-ddТhh:mm:ss"))
                 + '}';
     }
